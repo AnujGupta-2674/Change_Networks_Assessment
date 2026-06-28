@@ -1,7 +1,8 @@
 import { UserRepository } from '../repositories/user.repository';
 import { PolicyRepository } from '../repositories/policy.repository';
 import { ApiError } from '../utils/ApiError';
-import { User } from '@prisma/client';
+import { authorizationService } from '../iam/authorization/authorization.service';
+import type { User } from '@prisma/client';
 
 export class UserService {
   private userRepo = new UserRepository();
@@ -9,14 +10,14 @@ export class UserService {
 
   async listUsers() {
     const users = await this.userRepo.findAll();
-    return users.map(user => ({
+    return users.map((user) => ({
       id: user.id,
       name: user.name,
       email: user.email,
       isRoot: user.isRoot,
       groupCount: user._count.memberships,
       directPolicyCount: user._count.policyAttachments,
-      boundary: user.boundary ? true : false
+      boundary: user.boundary ? true : false,
     }));
   }
 
@@ -26,7 +27,13 @@ export class UserService {
     return user;
   }
 
-  async attachPolicy(userId: string, policyId: string) {
+  /**
+   * Attaches a MANAGED policy directly to a user.
+   *
+   * Delegation Bypass Prevention: the actor must hold all Allow actions
+   * defined in the policy being attached.
+   */
+  async attachPolicy(userId: string, policyId: string, actorId: string) {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new ApiError(404, 'User not found');
 
@@ -34,11 +41,15 @@ export class UserService {
     if (!policy) throw new ApiError(404, 'Policy not found');
 
     if (policy.type !== 'MANAGED') {
-      throw new ApiError(400, 'Only MANAGED policies can be attached this way');
+      throw new ApiError(400, 'Only MANAGED policies can be attached directly to users');
     }
 
     const existing = await this.userRepo.findPolicyAttachment(userId, policyId);
     if (existing) throw new ApiError(409, 'Policy already attached to user');
+
+    // Delegation bypass prevention
+    const statements = policy.statements as { Effect: string; Action: string[]; Resource: string[] }[];
+    await authorizationService.checkDelegationBypass(actorId, statements);
 
     await this.userRepo.attachPolicy(userId, policyId);
     return { success: true };
@@ -52,13 +63,28 @@ export class UserService {
     return { success: true };
   }
 
+  /**
+   * Sets a boundary policy on a user.
+   *
+   * Rules:
+   * - Only root can perform this operation
+   * - Target must be an existing, non-root user (root cannot be restricted)
+   * - Policy must be MANAGED
+   * - Replaces any existing boundary (one boundary per user)
+   */
   async setBoundary(userId: string, policyId: string, currentUser: User) {
+    // Root-only operation
     if (!currentUser.isRoot) {
       throw new ApiError(403, 'Only the root user can set a boundary on a user');
     }
 
     const user = await this.userRepo.findById(userId);
     if (!user) throw new ApiError(404, 'User not found');
+
+    // Cannot set boundary on the root user
+    if (user.isRoot) {
+      throw new ApiError(400, 'Cannot set a boundary on the root user');
+    }
 
     const policy = await this.policyRepo.findById(policyId);
     if (!policy) throw new ApiError(404, 'Policy not found');
@@ -70,7 +96,15 @@ export class UserService {
     return { success: true };
   }
 
+  /**
+   * Removes a boundary from a user.
+   *
+   * Rules:
+   * - Only root can perform this operation
+   * - Target must be an existing user
+   */
   async removeBoundary(userId: string, currentUser: User) {
+    // Root-only operation
     if (!currentUser.isRoot) {
       throw new ApiError(403, 'Only the root user can remove a boundary from a user');
     }
@@ -78,10 +112,15 @@ export class UserService {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new ApiError(404, 'User not found');
 
+    // Cannot remove boundary from root (they cannot have one anyway, but defensive)
+    if (user.isRoot) {
+      throw new ApiError(400, 'The root user cannot have a boundary');
+    }
+
     try {
       await this.userRepo.removeBoundary(userId);
-    } catch (error) {
-      // Ignore if no boundary existed
+    } catch {
+      // Ignore — no boundary existed, which is fine
     }
     return { success: true };
   }

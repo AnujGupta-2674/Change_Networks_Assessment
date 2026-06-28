@@ -2,6 +2,7 @@ import { GroupRepository } from '../repositories/group.repository';
 import { PolicyRepository } from '../repositories/policy.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { ApiError } from '../utils/ApiError';
+import { authorizationService } from '../iam/authorization/authorization.service';
 
 export class GroupService {
   private groupRepo = new GroupRepository();
@@ -40,7 +41,8 @@ export class GroupService {
     const group = await this.groupRepo.findById(id);
     if (!group) throw new ApiError(404, 'Group not found');
 
-    // Delete associated INLINE policies explicitly (Cascade will only delete the join table row)
+    // Delete INLINE policies attached to this group before deleting the group
+    // (Cascade will delete the join table rows, but not the INLINE policy documents themselves)
     const attachments = group.policyAttachments || [];
     for (const attachment of attachments) {
       if (attachment.policy.type === 'INLINE') {
@@ -73,7 +75,13 @@ export class GroupService {
     return { success: true };
   }
 
-  async attachPolicy(groupId: string, policyId: string) {
+  /**
+   * Attaches a MANAGED policy to a group.
+   *
+   * Delegation Bypass Prevention: the actor must hold all Allow actions
+   * defined in the policy being attached.
+   */
+  async attachPolicy(groupId: string, policyId: string, actorId: string) {
     const group = await this.groupRepo.findById(groupId);
     if (!group) throw new ApiError(404, 'Group not found');
 
@@ -81,11 +89,15 @@ export class GroupService {
     if (!policy) throw new ApiError(404, 'Policy not found');
 
     if (policy.type !== 'MANAGED') {
-      throw new ApiError(400, 'Only MANAGED policies can be attached this way');
+      throw new ApiError(400, 'Only MANAGED policies can be attached to groups');
     }
 
     const existing = await this.groupRepo.findPolicyAttachment(groupId, policyId);
     if (existing) throw new ApiError(409, 'Policy already attached to group');
+
+    // Delegation bypass prevention
+    const statements = policy.statements as { Effect: string; Action: string[]; Resource: string[] }[];
+    await authorizationService.checkDelegationBypass(actorId, statements);
 
     await this.groupRepo.attachPolicy(groupId, policyId);
     return { success: true };

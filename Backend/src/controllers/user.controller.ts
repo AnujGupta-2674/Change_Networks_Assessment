@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { attachUserPolicySchema, putUserBoundarySchema } from '../validators/user.validator';
 import { ApiError } from '../utils/ApiError';
+import { getEffectivePermissionsForUser } from '../iam/effective-permissions/effective-permissions.service';
 
 const userService = new UserService();
 
@@ -16,8 +17,9 @@ export const getUser = async (req: Request, res: Response) => {
 };
 
 export const attachPolicy = async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, 'Unauthorized');
   const { policyId } = attachUserPolicySchema.parse(req).body;
-  await userService.attachPolicy(req.params.id as string, policyId);
+  await userService.attachPolicy(req.params.id as string, policyId, req.user.id);
   res.status(200).json({ success: true, message: 'Policy attached to user' });
 };
 
@@ -37,4 +39,14 @@ export const removeBoundary = async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, 'Unauthorized');
   await userService.removeBoundary(req.params.id as string, req.user);
   res.status(200).json({ success: true, message: 'Boundary removed successfully' });
+};
+
+/**
+ * GET /api/iam/users/:id/effective-permissions
+ * Returns the full effective permission summary for a user.
+ * Requires iam:GetUser permission (enforced in routes).
+ */
+export const getEffectivePermissions = async (req: Request, res: Response) => {
+  const data = await getEffectivePermissionsForUser(req.params.id as string);
+  res.status(200).json({ success: true, data });
 };

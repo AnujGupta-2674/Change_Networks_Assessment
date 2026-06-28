@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GroupService } from '../services/group.service';
 import { createGroupSchema, updateGroupSchema, addMemberSchema, attachGroupPolicySchema } from '../validators/group.validator';
+import { ApiError } from '../utils/ApiError';
 
 const groupService = new GroupService();
 
@@ -43,8 +44,9 @@ export const removeMember = async (req: Request, res: Response) => {
 };
 
 export const attachPolicy = async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, 'Unauthorized');
   const { policyId } = attachGroupPolicySchema.parse(req).body;
-  await groupService.attachPolicy(req.params.id as string, policyId);
+  await groupService.attachPolicy(req.params.id as string, policyId, req.user.id);
   res.status(200).json({ success: true, message: 'Policy attached to group' });
 };
 
