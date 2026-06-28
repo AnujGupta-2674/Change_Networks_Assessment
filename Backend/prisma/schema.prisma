@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PolicyType {
+  MANAGED
+  INLINE
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String
+  isRoot       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships       UserGroupMembership[]
+  policyAttachments UserPolicyAttachment[]
+  boundary          UserBoundary?
+}
+
+model Group {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships       UserGroupMembership[]
+  policyAttachments GroupPolicyAttachment[]
+}
+
+model Policy {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique
+  description String?
+  type        PolicyType
+  statements  Json
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  userAttachments  UserPolicyAttachment[]
+  groupAttachments GroupPolicyAttachment[]
+  userBoundaries   UserBoundary[]
+}
+
+model UserGroupMembership {
+  userId  String @db.Uuid
+  groupId String @db.Uuid
+  addedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model GroupPolicyAttachment {
+  groupId    String @db.Uuid
+  policyId   String @db.Uuid
+  attachedAt DateTime @default(now())
+
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, policyId])
+  @@index([groupId])
+  @@index([policyId])
+}
+
+model UserPolicyAttachment {
+  userId     String @db.Uuid
+  policyId   String @db.Uuid
+  attachedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, policyId])
+  @@index([userId])
+  @@index([policyId])
+}
+
+model UserBoundary {
+  userId   String   @id @db.Uuid
+  policyId String   @db.Uuid
+  setAt    DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+}
