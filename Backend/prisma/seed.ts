@@ -12,6 +12,13 @@ async function main() {
   const bobPassword = await bcrypt.hash('bob1234', 10);
   const charliePassword = await bcrypt.hash('charlie1234', 10);
 
+  // Organization
+  const org = await prisma.organization.create({
+    data: {
+      name: 'Change Networks',
+    }
+  });
+
   // Users
   const rootUser = await prisma.user.upsert({
     where: { email: 'root@org.local' },
@@ -21,7 +28,13 @@ async function main() {
       email: 'root@org.local',
       passwordHash: rootPassword,
       isRoot: true,
+      organizationId: org.id,
     },
+  });
+
+  await prisma.organization.update({
+    where: { id: org.id },
+    data: { ownerId: rootUser.id },
   });
 
   const alice = await prisma.user.upsert({
@@ -32,6 +45,7 @@ async function main() {
       email: 'alice@org.local',
       passwordHash: alicePassword,
       isRoot: false,
+      organizationId: org.id,
     },
   });
 
@@ -43,6 +57,7 @@ async function main() {
       email: 'bob@org.local',
       passwordHash: bobPassword,
       isRoot: false,
+      organizationId: org.id,
     },
   });
 
@@ -54,16 +69,16 @@ async function main() {
       email: 'charlie@org.local',
       passwordHash: charliePassword,
       isRoot: false,
+      organizationId: org.id,
     },
   });
 
   // Policies
-  const readOnlyPolicy = await prisma.policy.upsert({
-    where: { name: 'ReadOnlyAccess' },
-    update: {},
-    create: {
+  const readOnlyPolicy = await prisma.policy.create({
+    data: {
       name: 'ReadOnlyAccess',
       type: PolicyType.MANAGED,
+      organizationId: org.id,
       statements: [
         {
           Effect: 'Allow',
@@ -78,15 +93,15 @@ async function main() {
           Resource: ['*'],
         },
       ],
+      createdBy: rootUser.id,
     },
   });
 
-  const reportsFullPolicy = await prisma.policy.upsert({
-    where: { name: 'ReportsFullAccess' },
-    update: {},
-    create: {
+  const reportsFullPolicy = await prisma.policy.create({
+    data: {
       name: 'ReportsFullAccess',
       type: PolicyType.MANAGED,
+      organizationId: org.id,
       statements: [
         {
           Effect: 'Allow',
@@ -100,16 +115,17 @@ async function main() {
           Resource: ['*'],
         },
       ],
+      createdBy: rootUser.id,
     },
   });
 
   // Group
-  const viewersGroup = await prisma.group.upsert({
-    where: { name: 'Viewers' },
-    update: {},
-    create: {
+  const viewersGroup = await prisma.group.create({
+    data: {
       name: 'Viewers',
       description: 'Users with read-only access to most resources',
+      organizationId: org.id,
+      createdBy: rootUser.id,
     },
   });
 

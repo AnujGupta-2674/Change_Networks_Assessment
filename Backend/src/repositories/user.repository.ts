@@ -8,20 +8,21 @@ export class UserRepository {
     });
   }
 
-  async findById(id: string) {
-    return await prisma.user.findUnique({
-      where: { id },
+  async findById(id: string, organizationId?: string) {
+    return await prisma.user.findFirst({
+      where: organizationId ? { id, organizationId } : { id },
     });
   }
 
-  async create(data: Prisma.UserCreateInput) {
+  async create(data: Prisma.UserCreateInput | Prisma.UserUncheckedCreateInput) {
     return await prisma.user.create({
       data,
     });
   }
 
-  async findAll() {
+  async findAll(organizationId: string) {
     return await prisma.user.findMany({
+      where: { organizationId },
       include: {
         _count: {
           select: {
@@ -35,9 +36,9 @@ export class UserRepository {
     });
   }
 
-  async findByIdWithIAM(id: string) {
-    return await prisma.user.findUnique({
-      where: { id },
+  async findByIdWithIAM(id: string, organizationId: string) {
+    return await prisma.user.findFirst({
+      where: { id, organizationId },
       select: {
         id: true,
         name: true,

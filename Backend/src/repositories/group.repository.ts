@@ -6,12 +6,13 @@ export class GroupRepository {
     return await prisma.group.create({ data });
   }
 
-  async findByName(name: string) {
-    return await prisma.group.findUnique({ where: { name } });
+  async findByName(name: string, organizationId: string) {
+    return await prisma.group.findUnique({ where: { name_organizationId: { name, organizationId } } });
   }
 
-  async findAll() {
+  async findAll(organizationId: string) {
     return await prisma.group.findMany({
+      where: { organizationId },
       include: {
         _count: {
           select: {
@@ -24,9 +25,9 @@ export class GroupRepository {
     });
   }
 
-  async findById(id: string) {
-    return await prisma.group.findUnique({
-      where: { id },
+  async findById(id: string, organizationId: string) {
+    return await prisma.group.findFirst({
+      where: { id, organizationId },
       include: {
         memberships: {
           include: {
@@ -46,15 +47,16 @@ export class GroupRepository {
     });
   }
 
-  async update(id: string, data: Prisma.GroupUpdateInput) {
-    return await prisma.group.update({
-      where: { id },
+  async update(id: string, organizationId: string, data: Prisma.GroupUpdateInput) {
+    // We only update if it belongs to the org
+    return await prisma.group.updateMany({
+      where: { id, organizationId },
       data,
     });
   }
 
-  async delete(id: string) {
-    return await prisma.group.delete({ where: { id } });
+  async delete(id: string, organizationId: string) {
+    return await prisma.group.deleteMany({ where: { id, organizationId } });
   }
 
   async addMember(groupId: string, userId: string) {

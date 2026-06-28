@@ -17,14 +17,29 @@ enum PolicyType {
   INLINE
 }
 
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ownerId   String?  @db.Uuid
+
+  users    User[]
+  groups   Group[]
+  policies Policy[]
+}
+
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String
-  email        String   @unique
-  passwordHash String
-  isRoot       Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  name           String
+  email          String   @unique
+  passwordHash   String
+  isRoot         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   memberships       UserGroupMembership[]
   policyAttachments UserPolicyAttachment[]
@@ -32,33 +47,45 @@ model User {
 }
 
 model Group {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String   @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   memberships       UserGroupMembership[]
   policyAttachments GroupPolicyAttachment[]
+
+  @@unique([name, organizationId])
 }
 
 model Policy {
-  id          String     @id @default(uuid()) @db.Uuid
-  name        String     @unique
-  description String?
-  type        PolicyType
-  statements  Json
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String     @id @default(uuid()) @db.Uuid
+  organizationId String     @db.Uuid
+  name           String
+  description    String?
+  type           PolicyType
+  statements     Json
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  createdBy      String     @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   userAttachments  UserPolicyAttachment[]
   groupAttachments GroupPolicyAttachment[]
   userBoundaries   UserBoundary[]
+
+  @@unique([name, organizationId])
 }
 
 model UserGroupMembership {
-  userId  String @db.Uuid
-  groupId String @db.Uuid
+  userId  String   @db.Uuid
+  groupId String   @db.Uuid
   addedAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -70,8 +97,8 @@ model UserGroupMembership {
 }
 
 model GroupPolicyAttachment {
-  groupId    String @db.Uuid
-  policyId   String @db.Uuid
+  groupId    String   @db.Uuid
+  policyId   String   @db.Uuid
   attachedAt DateTime @default(now())
 
   group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -83,8 +110,8 @@ model GroupPolicyAttachment {
 }
 
 model UserPolicyAttachment {
-  userId     String @db.Uuid
-  policyId   String @db.Uuid
+  userId     String   @db.Uuid
+  policyId   String   @db.Uuid
   attachedAt DateTime @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

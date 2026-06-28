@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
-import { authService } from '../services/authService';
-import toast from 'react-hot-toast';
+import { register as registerApi } from '../api/client';
+import { toast } from 'sonner';
 
 export const useRegister = () => {
   return useMutation({
-    mutationFn: authService.register,
+    mutationFn: registerApi,
     onSuccess: () => {
       toast.success('Registration successful! Please log in.');
     },

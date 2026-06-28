@@ -7,50 +7,50 @@ const groupService = new GroupService();
 
 export const createGroup = async (req: Request, res: Response) => {
   const data = createGroupSchema.parse(req).body;
-  const group = await groupService.createGroup(data);
+  const group = await groupService.createGroup({ ...data, organizationId: req.user!.organizationId, createdBy: req.user!.id });
   res.status(201).json({ success: true, data: group });
 };
 
 export const listGroups = async (req: Request, res: Response) => {
-  const groups = await groupService.listGroups();
+  const groups = await groupService.listGroups(req.user!.organizationId);
   res.status(200).json({ success: true, data: groups });
 };
 
 export const getGroup = async (req: Request, res: Response) => {
-  const group = await groupService.getGroup(req.params.id as string);
+  const group = await groupService.getGroup(req.params.id as string, req.user!.organizationId);
   res.status(200).json({ success: true, data: group });
 };
 
 export const updateGroup = async (req: Request, res: Response) => {
   const data = updateGroupSchema.parse(req).body;
-  const group = await groupService.updateGroup(req.params.id as string, data);
+  const group = await groupService.updateGroup(req.params.id as string, req.user!.organizationId, data);
   res.status(200).json({ success: true, data: group });
 };
 
 export const deleteGroup = async (req: Request, res: Response) => {
-  await groupService.deleteGroup(req.params.id as string);
+  await groupService.deleteGroup(req.params.id as string, req.user!.organizationId);
   res.status(200).json({ success: true, message: 'Group deleted successfully' });
 };
 
 export const addMember = async (req: Request, res: Response) => {
   const { userId } = addMemberSchema.parse(req).body;
-  await groupService.addMember(req.params.id as string, userId);
+  await groupService.addMember(req.params.id as string, userId, req.user!.organizationId);
   res.status(200).json({ success: true, message: 'User added to group' });
 };
 
 export const removeMember = async (req: Request, res: Response) => {
-  await groupService.removeMember(req.params.id as string, req.params.userId as string);
+  await groupService.removeMember(req.params.id as string, req.params.userId as string, req.user!.organizationId);
   res.status(200).json({ success: true, message: 'User removed from group' });
 };
 
 export const attachPolicy = async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, 'Unauthorized');
   const { policyId } = attachGroupPolicySchema.parse(req).body;
-  await groupService.attachPolicy(req.params.id as string, policyId, req.user.id);
+  await groupService.attachPolicy(req.params.id as string, policyId, req.user.id, req.user.organizationId);
   res.status(200).json({ success: true, message: 'Policy attached to group' });
 };
 
 export const detachPolicy = async (req: Request, res: Response) => {
-  await groupService.detachPolicy(req.params.id as string, req.params.policyId as string);
+  await groupService.detachPolicy(req.params.id as string, req.params.policyId as string, req.user!.organizationId);
   res.status(200).json({ success: true, message: 'Policy detached from group' });
 };

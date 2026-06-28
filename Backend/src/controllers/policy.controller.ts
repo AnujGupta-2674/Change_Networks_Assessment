@@ -8,24 +8,24 @@ const policyService = new PolicyService();
 export const createPolicy = async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, 'Unauthorized');
   const data = createPolicySchema.parse(req).body;
-  const policy = await policyService.createPolicy(data, req.user.id);
+  const policy = await policyService.createPolicy({ ...data, organizationId: req.user.organizationId, createdBy: req.user.id }, req.user.id);
   res.status(201).json({ success: true, data: policy });
 };
 
 export const listPolicies = async (req: Request, res: Response) => {
-  const policies = await policyService.listPolicies();
+  const policies = await policyService.listPolicies(req.user!.organizationId);
   res.status(200).json({ success: true, data: policies });
 };
 
 export const getPolicy = async (req: Request, res: Response) => {
-  const policy = await policyService.getPolicy(req.params.id as string);
+  const policy = await policyService.getPolicy(req.params.id as string, req.user!.organizationId);
   res.status(200).json({ success: true, data: policy });
 };
 
 export const updatePolicy = async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, 'Unauthorized');
   const data = updatePolicySchema.parse(req).body;
-  const policy = await policyService.updatePolicy(req.params.id as string, data, req.user.id);
+  const policy = await policyService.updatePolicy(req.params.id as string, req.user.organizationId, data, req.user.id);
   res.status(200).json({ success: true, data: policy });
 };
 

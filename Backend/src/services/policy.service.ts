@@ -13,7 +13,7 @@ export class PolicyService {
    * every Allow action in the new policy's statements.
    */
   async createPolicy(data: any, actorId: string) {
-    const existing = await this.policyRepo.findByName(data.name);
+    const existing = await this.policyRepo.findByName(data.name, data.organizationId);
     if (existing) {
       throw new ApiError(409, 'Policy with this name already exists');
     }
@@ -24,12 +24,12 @@ export class PolicyService {
     return await this.policyRepo.create(data);
   }
 
-  async listPolicies() {
-    return await this.policyRepo.findAll();
+  async listPolicies(organizationId: string) {
+    return await this.policyRepo.findAll(organizationId);
   }
 
-  async getPolicy(id: string) {
-    const policy = await this.policyRepo.findById(id);
+  async getPolicy(id: string, organizationId: string) {
+    const policy = await this.policyRepo.findById(id, organizationId);
     if (!policy) throw new ApiError(404, 'Policy not found');
     return policy;
   }
@@ -40,12 +40,12 @@ export class PolicyService {
    * Delegation Bypass Prevention: if statements are being changed, verify the
    * actor holds every Allow action in the NEW statements.
    */
-  async updatePolicy(id: string, data: any, actorId: string) {
-    const policy = await this.policyRepo.findById(id);
+  async updatePolicy(id: string, organizationId: string, data: any, actorId: string) {
+    const policy = await this.policyRepo.findById(id, organizationId);
     if (!policy) throw new ApiError(404, 'Policy not found');
 
     if (data.name && data.name !== policy.name) {
-      const existing = await this.policyRepo.findByName(data.name);
+      const existing = await this.policyRepo.findByName(data.name, organizationId);
       if (existing) throw new ApiError(409, 'Policy with this name already exists');
     }
 
@@ -54,7 +54,7 @@ export class PolicyService {
       await authorizationService.checkDelegationBypass(actorId, data.statements);
     }
 
-    return await this.policyRepo.update(id, data);
+    return await this.policyRepo.update(id, organizationId, data);
   }
 
   /**
@@ -66,7 +66,7 @@ export class PolicyService {
    * - Root bypasses the attachment restriction
    */
   async deletePolicy(id: string, actor: User) {
-    const policy = await this.policyRepo.findById(id);
+    const policy = await this.policyRepo.findById(id, actor.organizationId);
     if (!policy) throw new ApiError(404, 'Policy not found');
 
     if (policy.type === 'MANAGED' && !actor.isRoot) {
@@ -84,7 +84,7 @@ export class PolicyService {
       }
     }
 
-    await this.policyRepo.delete(id);
+    await this.policyRepo.delete(id, actor.organizationId);
     return { success: true };
   }
 }

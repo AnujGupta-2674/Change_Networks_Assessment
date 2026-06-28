@@ -7,7 +7,7 @@ import { authorize } from '../middlewares/authorize.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { createPolicySchema, updatePolicySchema } from '../validators/policy.validator';
 import { createGroupSchema, updateGroupSchema, addMemberSchema, attachGroupPolicySchema } from '../validators/group.validator';
-import { attachUserPolicySchema, putUserBoundarySchema } from '../validators/user.validator';
+import { attachUserPolicySchema, putUserBoundarySchema, createUserSchema } from '../validators/user.validator';
 import { catchAsync } from '../utils/catchAsync';
 
 const router = Router();
@@ -35,6 +35,7 @@ router.delete('/groups/:id/policies/:policyId', authorize('iam:DetachGroupPolicy
 
 // ── Users ──────────────────────────────────────────────────────────────────
 router.get('/users', authorize('iam:ListUsers'), catchAsync(userController.listUsers));
+router.post('/users', validate(createUserSchema), catchAsync(userController.createUser));
 router.get('/users/:id', authorize('iam:GetUser'), catchAsync(userController.getUser));
 router.get('/users/:id/effective-permissions', authorize('iam:GetUser'), catchAsync(userController.getEffectivePermissions));
 router.post('/users/:id/policies', authorize('iam:AttachUserPolicy'), validate(attachUserPolicySchema), catchAsync(userController.attachPolicy));

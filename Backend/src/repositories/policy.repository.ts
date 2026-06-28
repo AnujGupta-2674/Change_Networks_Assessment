@@ -6,29 +6,30 @@ export class PolicyRepository {
     return await prisma.policy.create({ data });
   }
 
-  async findByName(name: string) {
-    return await prisma.policy.findUnique({ where: { name } });
+  async findByName(name: string, organizationId: string) {
+    return await prisma.policy.findUnique({ where: { name_organizationId: { name, organizationId } } });
   }
 
-  async findAll() {
+  async findAll(organizationId: string) {
     return await prisma.policy.findMany({
+      where: { organizationId },
       orderBy: { createdAt: 'desc' }
     });
   }
 
-  async findById(id: string) {
-    return await prisma.policy.findUnique({ where: { id } });
+  async findById(id: string, organizationId: string) {
+    return await prisma.policy.findFirst({ where: { id, organizationId } });
   }
 
-  async update(id: string, data: Prisma.PolicyUpdateInput) {
-    return await prisma.policy.update({
-      where: { id },
+  async update(id: string, organizationId: string, data: Prisma.PolicyUpdateInput) {
+    return await prisma.policy.updateMany({
+      where: { id, organizationId },
       data,
     });
   }
 
-  async delete(id: string) {
-    return await prisma.policy.delete({ where: { id } });
+  async delete(id: string, organizationId: string) {
+    return await prisma.policy.deleteMany({ where: { id, organizationId } });
   }
 
   async findGroupAttachments(policyId: string) {

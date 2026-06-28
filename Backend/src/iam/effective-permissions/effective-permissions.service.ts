@@ -50,10 +50,11 @@ export interface EffectivePermissionsResult {
  */
 export async function getEffectivePermissionsForUser(
   targetUserId: string,
+  organizationId: string
 ): Promise<EffectivePermissionsResult> {
   // Load user display info
-  const userRecord = await prisma.user.findUnique({
-    where: { id: targetUserId },
+  const userRecord = await prisma.user.findFirst({
+    where: { id: targetUserId, organizationId },
     select: { id: true, name: true, isRoot: true },
   });
   if (!userRecord) throw new ApiError(404, 'User not found');

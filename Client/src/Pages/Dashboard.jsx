@@ -1,82 +1,149 @@
-import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useLogout } from '../hooks/useLogout';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
-import { Badge } from '../components/Badge';
-import { Button } from '../components/Button';
-import { LogOut, User, Mail, ShieldAlert, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { ACTIONS_BY_NAMESPACE, ACTION_ROUTES, VALID_ACTIONS } from '../constants/actions';
+import { callResourceAction } from '../api/client';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Loader2, CheckCircle2, XCircle, Play } from 'lucide-react';
 
-const Dashboard = () => {
-  const { user } = useAuth();
-  const logoutMutation = useLogout();
+const ActionCard = ({ action, status, onClick }) => {
+  const { method } = ACTION_ROUTES[action];
+  
+  const getStatusContent = () => {
+    switch (status) {
+      case 'loading':
+        return <Loader2 className="w-5 h-5 animate-spin text-blue-500" />;
+      case 'allowed':
+        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+      case 'denied':
+        return <XCircle className="w-5 h-5 text-red-500" />;
+      default:
+        return <div className="w-5 h-5 rounded-full bg-neutral-200 dark:bg-neutral-800" />;
+    }
+  };
+
+  const getMethodColor = (method) => {
+    switch (method) {
+      case 'GET': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300';
+      case 'POST': return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300';
+      case 'PUT':
+      case 'PATCH': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300';
+      case 'DELETE': return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300';
+      default: return 'bg-neutral-100 text-neutral-700';
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
-          <Button 
-            variant="secondary" 
-            onClick={() => logoutMutation.mutate()}
-            isLoading={logoutMutation.isPending}
-            className="text-slate-600"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </header>
+    <Card 
+      className="cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+      onClick={onClick}
+    >
+      <CardContent className="p-4 flex items-center justify-between">
+        <div className="flex flex-col gap-2">
+          <div className="font-mono text-sm">{action}</div>
+          <div>
+            <Badge variant="outline" className={`border-0 ${getMethodColor(method)}`}>
+              {method}
+            </Badge>
+          </div>
+        </div>
+        <div>
+          {getStatusContent()}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
-        <Card className="border-t-4 border-t-primary">
-          <CardHeader>
-            <CardTitle>Welcome back, {user?.name}!</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Profile Details Card */}
-              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 flex items-start space-x-4">
-                <div className="bg-primary/10 p-3 rounded-full text-primary mt-1">
-                  <User className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Full Name</p>
-                  <p className="text-lg font-semibold text-slate-900">{user?.name}</p>
-                </div>
-              </div>
+const Dashboard = () => {
+  const [statuses, setStatuses] = useState({});
+  const [isTestingAll, setIsTestingAll] = useState(false);
 
-              {/* Email Card */}
-              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 flex items-start space-x-4">
-                <div className="bg-primary/10 p-3 rounded-full text-primary mt-1">
-                  <Mail className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">Email Address</p>
-                  <p className="text-lg font-semibold text-slate-900">{user?.email}</p>
-                </div>
-              </div>
+  const executeAction = async (action) => {
+    const { method, url } = ACTION_ROUTES[action];
+    
+    setStatuses(prev => ({ ...prev, [action]: 'loading' }));
+    
+    try {
+      await callResourceAction(method, url);
+      setStatuses(prev => ({ ...prev, [action]: 'allowed' }));
+    } catch (error) {
+      if (error.response?.status === 403) {
+        setStatuses(prev => ({ ...prev, [action]: 'denied' }));
+      } else {
+        setStatuses(prev => ({ ...prev, [action]: 'denied' }));
+      }
+    }
 
-              {/* Account Type Card */}
-              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 flex items-start space-x-4 md:col-span-2">
-                <div className={`p-3 rounded-full mt-1 ${user?.isRoot ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
-                  {user?.isRoot ? <ShieldAlert className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Account Privilege</p>
-                  <Badge variant={user?.isRoot ? "root" : "success"} className="px-3 py-1 text-sm">
-                    {user?.isRoot ? 'Root User' : 'Normal User'}
-                  </Badge>
-                  <p className="text-sm text-slate-500 mt-2">
-                    {user?.isRoot 
-                      ? "You have elevated privileges. You can manage system-wide settings and resources."
-                      : "You have standard access to your personal resources and settings."
-                    }
-                  </p>
-                </div>
-              </div>
+    // Reset to idle after 4 seconds
+    setTimeout(() => {
+      setStatuses(prev => {
+        // Only reset if it's currently allowed or denied (don't override a new loading state)
+        if (prev[action] === 'allowed' || prev[action] === 'denied') {
+          return { ...prev, [action]: 'idle' };
+        }
+        return prev;
+      });
+    }, 4000);
+  };
 
+  const handleTestAll = async () => {
+    if (isTestingAll) return;
+    setIsTestingAll(true);
+    
+    // We only test the 14 resource actions, not IAM actions
+    const resourceActions = VALID_ACTIONS.filter(a => !a.startsWith('iam:'));
+    
+    for (const action of resourceActions) {
+      await executeAction(action);
+      // Add a small delay between requests to not overwhelm the network and allow visual feedback
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    
+    setIsTestingAll(false);
+  };
+
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Resource Dashboard</h1>
+          <p className="text-neutral-500 mt-1">
+            Click any resource action below to test your IAM middleware evaluation logic.
+          </p>
+        </div>
+        <Button 
+          onClick={handleTestAll} 
+          disabled={isTestingAll}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isTestingAll ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Play className="w-4 h-4 mr-2" />
+          )}
+          Test All
+        </Button>
+      </div>
+
+      <div className="space-y-8">
+        {['reports', 'alerts', 'settings', 'audit'].map(namespace => (
+          <div key={namespace} className="space-y-4">
+            <h2 className="text-xl font-semibold capitalize border-b border-neutral-200 dark:border-neutral-800 pb-2">
+              {namespace}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {ACTIONS_BY_NAMESPACE[namespace].map(action => (
+                <ActionCard
+                  key={action}
+                  action={action}
+                  status={statuses[action] || 'idle'}
+                  onClick={() => executeAction(action)}
+                />
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        ))}
       </div>
     </div>
   );

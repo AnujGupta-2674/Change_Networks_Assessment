@@ -1,30 +1,43 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
-import { attachUserPolicySchema, putUserBoundarySchema } from '../validators/user.validator';
+import { attachUserPolicySchema, putUserBoundarySchema, createUserSchema } from '../validators/user.validator';
 import { ApiError } from '../utils/ApiError';
 import { getEffectivePermissionsForUser } from '../iam/effective-permissions/effective-permissions.service';
 
 const userService = new UserService();
 
+
+export const createUser = async (req: Request, res: Response) => {
+  if (!req.user?.isRoot) {
+    throw new ApiError(403, 'Only Root can create users');
+  }
+  const { name, email, password, isRoot } = createUserSchema.parse(req).body;
+  const user = await userService.createUser(
+    { name, email, password, isRoot }, 
+    req.user.organizationId
+  );
+  res.status(201).json({ success: true, data: user });
+};
+
 export const listUsers = async (req: Request, res: Response) => {
-  const users = await userService.listUsers();
+  const users = await userService.listUsers(req.user!.organizationId);
   res.status(200).json({ success: true, data: users });
 };
 
 export const getUser = async (req: Request, res: Response) => {
-  const user = await userService.getUser(req.params.id as string);
+  const user = await userService.getUser(req.params.id as string, req.user!.organizationId);
   res.status(200).json({ success: true, data: user });
 };
 
 export const attachPolicy = async (req: Request, res: Response) => {
   if (!req.user) throw new ApiError(401, 'Unauthorized');
   const { policyId } = attachUserPolicySchema.parse(req).body;
-  await userService.attachPolicy(req.params.id as string, policyId, req.user.id);
+  await userService.attachPolicy(req.params.id as string, policyId, req.user.id, req.user.organizationId);
   res.status(200).json({ success: true, message: 'Policy attached to user' });
 };
 
 export const detachPolicy = async (req: Request, res: Response) => {
-  await userService.detachPolicy(req.params.id as string, req.params.policyId as string);
+  await userService.detachPolicy(req.params.id as string, req.params.policyId as string, req.user!.organizationId);
   res.status(200).json({ success: true, message: 'Policy detached from user' });
 };
 
@@ -47,6 +60,6 @@ export const removeBoundary = async (req: Request, res: Response) => {
  * Requires iam:GetUser permission (enforced in routes).
  */
 export const getEffectivePermissions = async (req: Request, res: Response) => {
-  const data = await getEffectivePermissionsForUser(req.params.id as string);
+  const data = await getEffectivePermissionsForUser(req.params.id as string, req.user!.organizationId);
   res.status(200).json({ success: true, data });
 };

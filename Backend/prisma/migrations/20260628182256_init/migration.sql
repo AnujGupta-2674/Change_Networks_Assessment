@@ -2,12 +2,39 @@
 CREATE TYPE "public"."PolicyType" AS ENUM ('MANAGED', 'INLINE');
 
 -- CreateTable
+CREATE TABLE "public"."Organization" (
+    "id" UUID NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "ownerId" UUID,
+
+    CONSTRAINT "Organization_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."User" (
+    "id" UUID NOT NULL,
+    "organizationId" UUID NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "isRoot" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."Group" (
     "id" UUID NOT NULL,
+    "organizationId" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdBy" UUID NOT NULL,
 
     CONSTRAINT "Group_pkey" PRIMARY KEY ("id")
 );
@@ -15,12 +42,14 @@ CREATE TABLE "public"."Group" (
 -- CreateTable
 CREATE TABLE "public"."Policy" (
     "id" UUID NOT NULL,
+    "organizationId" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "type" "public"."PolicyType" NOT NULL,
     "statements" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdBy" UUID NOT NULL,
 
     CONSTRAINT "Policy_pkey" PRIMARY KEY ("id")
 );
@@ -62,10 +91,13 @@ CREATE TABLE "public"."UserBoundary" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Group_name_key" ON "public"."Group"("name");
+CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Policy_name_key" ON "public"."Policy"("name");
+CREATE UNIQUE INDEX "Group_name_organizationId_key" ON "public"."Group"("name", "organizationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Policy_name_organizationId_key" ON "public"."Policy"("name", "organizationId");
 
 -- CreateIndex
 CREATE INDEX "UserGroupMembership_userId_idx" ON "public"."UserGroupMembership"("userId");
@@ -87,6 +119,15 @@ CREATE INDEX "UserPolicyAttachment_policyId_idx" ON "public"."UserPolicyAttachme
 
 -- CreateIndex
 CREATE INDEX "UserBoundary_policyId_idx" ON "public"."UserBoundary"("policyId");
+
+-- AddForeignKey
+ALTER TABLE "public"."User" ADD CONSTRAINT "User_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Group" ADD CONSTRAINT "Group_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Policy" ADD CONSTRAINT "Policy_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "public"."Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."UserGroupMembership" ADD CONSTRAINT "UserGroupMembership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

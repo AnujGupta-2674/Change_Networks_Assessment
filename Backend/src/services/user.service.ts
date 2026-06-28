@@ -4,12 +4,35 @@ import { ApiError } from '../utils/ApiError';
 import { authorizationService } from '../iam/authorization/authorization.service';
 import type { User } from '@prisma/client';
 
+import { PolicyType } from '@prisma/client';
+import bcrypt from 'bcrypt';
+
 export class UserService {
   private userRepo = new UserRepository();
   private policyRepo = new PolicyRepository();
 
-  async listUsers() {
-    const users = await this.userRepo.findAll();
+  async createUser(data: any, organizationId: string) {
+    const existingUser = await this.userRepo.findByEmail(data.email);
+    if (existingUser) {
+      throw new ApiError(409, 'User with this email already exists');
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const user = await this.userRepo.create({
+      name: data.name,
+      email: data.email,
+      passwordHash,
+      isRoot: data.isRoot || false,
+      organizationId,
+    });
+
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async listUsers(organizationId: string) {
+    const users = await this.userRepo.findAll(organizationId);
     return users.map((user) => ({
       id: user.id,
       name: user.name,
@@ -21,8 +44,8 @@ export class UserService {
     }));
   }
 
-  async getUser(id: string) {
-    const user = await this.userRepo.findByIdWithIAM(id);
+  async getUser(id: string, organizationId: string) {
+    const user = await this.userRepo.findByIdWithIAM(id, organizationId);
     if (!user) throw new ApiError(404, 'User not found');
     return user;
   }
@@ -33,11 +56,11 @@ export class UserService {
    * Delegation Bypass Prevention: the actor must hold all Allow actions
    * defined in the policy being attached.
    */
-  async attachPolicy(userId: string, policyId: string, actorId: string) {
-    const user = await this.userRepo.findById(userId);
+  async attachPolicy(userId: string, policyId: string, actorId: string, organizationId: string) {
+    const user = await this.userRepo.findById(userId, organizationId);
     if (!user) throw new ApiError(404, 'User not found');
 
-    const policy = await this.policyRepo.findById(policyId);
+    const policy = await this.policyRepo.findById(policyId, organizationId);
     if (!policy) throw new ApiError(404, 'Policy not found');
 
     if (policy.type !== 'MANAGED') {
@@ -55,7 +78,10 @@ export class UserService {
     return { success: true };
   }
 
-  async detachPolicy(userId: string, policyId: string) {
+  async detachPolicy(userId: string, policyId: string, organizationId: string) {
+    const user = await this.userRepo.findById(userId, organizationId);
+    if (!user) throw new ApiError(404, 'User not found');
+
     const attachment = await this.userRepo.findPolicyAttachment(userId, policyId);
     if (!attachment) throw new ApiError(404, 'Policy attachment not found');
 
@@ -78,7 +104,7 @@ export class UserService {
       throw new ApiError(403, 'Only the root user can set a boundary on a user');
     }
 
-    const user = await this.userRepo.findById(userId);
+    const user = await this.userRepo.findById(userId, currentUser.organizationId);
     if (!user) throw new ApiError(404, 'User not found');
 
     // Cannot set boundary on the root user
@@ -86,7 +112,7 @@ export class UserService {
       throw new ApiError(400, 'Cannot set a boundary on the root user');
     }
 
-    const policy = await this.policyRepo.findById(policyId);
+    const policy = await this.policyRepo.findById(policyId, currentUser.organizationId);
     if (!policy) throw new ApiError(404, 'Policy not found');
     if (policy.type !== 'MANAGED') {
       throw new ApiError(400, 'Boundary policy must be a MANAGED policy');
@@ -109,7 +135,7 @@ export class UserService {
       throw new ApiError(403, 'Only the root user can remove a boundary from a user');
     }
 
-    const user = await this.userRepo.findById(userId);
+    const user = await this.userRepo.findById(userId, currentUser.organizationId);
     if (!user) throw new ApiError(404, 'User not found');
 
     // Cannot remove boundary from root (they cannot have one anyway, but defensive)

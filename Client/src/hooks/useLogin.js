@@ -1,16 +1,17 @@
 import { useMutation } from '@tanstack/react-query';
-import { authService } from '../services/authService';
+import { login as loginApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export const useLogin = () => {
-  const { login } = useAuth();
+  const { setUser } = useAuth();
 
   return useMutation({
-    mutationFn: authService.login,
+    mutationFn: loginApi,
     onSuccess: (response) => {
       // response.data contains { accessToken, user }
-      login(response.data.user, response.data.accessToken);
+      localStorage.setItem('token', response.data.data.accessToken);
+      setUser(response.data.data.user);
       toast.success('Successfully logged in!');
     },
     onError: (error) => {
