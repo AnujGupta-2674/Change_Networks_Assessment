@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { listPolicies } from '@/api/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { listPolicies, deletePolicy } from '@/api/client';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Shield, Edit, Users, Layers } from 'lucide-react';
+import { Plus, Search, Shield, Edit, Trash2, Users, Layers, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const TAB_ALL = 'all';
 const TAB_MANAGED = 'MANAGED';
@@ -18,13 +30,28 @@ const TAB_INLINE = 'INLINE';
 const PoliciesList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState(TAB_ALL);
+  const [policyToDelete, setPolicyToDelete] = useState(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: policies, isLoading, isError, error } = useQuery({
     queryKey: ['policies'],
     queryFn: async () => {
       const res = await listPolicies();
       return res.data.data;
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deletePolicy(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['policies'] });
+      toast.success('Policy deleted successfully');
+      setPolicyToDelete(null);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to delete policy');
+      setPolicyToDelete(null);
     }
   });
 
@@ -225,14 +252,61 @@ const PoliciesList = () => {
                     })}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/iam/policies/${policy.id}/edit`)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 px-2"
-                    >
-                      <Edit className="h-3.5 w-3.5 mr-1" /> Edit
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/iam/policies/${policy.id}/edit`)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 px-2"
+                      >
+                        <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+                      </Button>
+                      <AlertDialog
+                        open={policyToDelete?.id === policy.id}
+                        onOpenChange={(isOpen) => !isOpen && setPolicyToDelete(null)}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPolicyToDelete(policy)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the "{policy.name}" policy. This action cannot be undone.
+                              {policy.type === 'MANAGED' && (
+                                <span className="block mt-2 font-medium text-red-600 dark:text-red-400">
+                                  Note: MANAGED policies cannot be deleted if they are currently attached to any users or groups.
+                                </span>
+                              )}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                e.preventDefault();
+                                deleteMutation.mutate(policy.id);
+                              }}
+                              disabled={deleteMutation.isPending}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              {deleteMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : (
+                                'Delete Policy'
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

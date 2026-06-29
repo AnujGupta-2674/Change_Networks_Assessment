@@ -6,6 +6,17 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { ArrowLeft, Loader2, Edit, Trash2, Shield, CheckCircle, XCircle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,9 +47,7 @@ const PolicyDetail = () => {
   });
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${policy?.name}"? This action cannot be undone.`)) {
-      deleteMutation.mutate();
-    }
+    deleteMutation.mutate();
   };
 
   if (isLoading) {
@@ -113,20 +122,40 @@ const PolicyDetail = () => {
           >
             <Edit className="w-4 h-4 mr-2" /> Edit Policy
           </Button>
-          {currentUser?.isRoot && (
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4 mr-2" />
-              )}
-              Delete
-            </Button>
-          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={deleteMutation.isPending}>
+                {deleteMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the "{policy.name}" policy. This action cannot be undone.
+                  {policy.type === 'MANAGED' && (
+                    <span className="block mt-2 font-medium text-red-600 dark:text-red-400">
+                      Note: MANAGED policies cannot be deleted if they are currently attached to any users or groups.
+                    </span>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Delete Policy
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
