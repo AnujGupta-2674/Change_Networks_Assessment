@@ -13,6 +13,14 @@ export class PolicyRepository {
   async findAll(organizationId: string) {
     return await prisma.policy.findMany({
       where: { organizationId },
+      include: {
+        _count: {
+          select: {
+            userAttachments: true,
+            groupAttachments: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' }
     });
   }
