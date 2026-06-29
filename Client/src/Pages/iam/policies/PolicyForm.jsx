@@ -141,6 +141,21 @@ const PolicyForm = () => {
                   placeholder="Brief description of this policy"
                 />
               </div>
+              {!isEditing && (
+                <div className="space-y-2">
+                  <Label>Policy Type</Label>
+                  <select
+                    {...register('type')}
+                    className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:border-neutral-800 dark:bg-neutral-950"
+                  >
+                    <option value="MANAGED">MANAGED — Reusable, can be attached to users and groups</option>
+                    <option value="INLINE">INLINE — Single-use, embedded in a specific resource</option>
+                  </select>
+                  <p className="text-xs text-neutral-500">
+                    Managed policies are recommended for most use cases.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </form>

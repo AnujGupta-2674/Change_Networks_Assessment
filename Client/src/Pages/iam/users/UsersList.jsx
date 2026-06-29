@@ -198,8 +198,23 @@ const UsersList = () => {
               ))
             ) : filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-neutral-500">
-                  No users found.
+                <TableCell colSpan={6} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2 text-neutral-500">
+                    <Shield className="w-8 h-8 text-neutral-300" />
+                    <p className="font-medium">No users found</p>
+                    {searchTerm && (
+                      <p className="text-sm">Try adjusting your search term</p>
+                    )}
+                    {!searchTerm && currentUser?.isRoot && (
+                      <Button
+                        size="sm"
+                        className="mt-1 bg-blue-600 hover:bg-blue-700"
+                        onClick={() => setIsCreateOpen(true)}
+                      >
+                        <Plus className="w-4 h-4 mr-1" /> Create your first user
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -222,8 +237,8 @@ const UsersList = () => {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>{u._count?.memberships || 0}</TableCell>
-                  <TableCell>{u._count?.policies || 0}</TableCell>
+                  <TableCell>{u.groupCount ?? u._count?.memberships ?? 0}</TableCell>
+                  <TableCell>{u.directPolicyCount ?? u._count?.policyAttachments ?? 0}</TableCell>
                   <TableCell>
                     {u.boundary ? (
                       <Badge variant="outline" className="text-amber-600 border-amber-600">Yes</Badge>

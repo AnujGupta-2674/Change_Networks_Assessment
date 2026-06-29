@@ -167,8 +167,23 @@ const GroupsList = () => {
               ))
             ) : filteredGroups.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-neutral-500">
-                  No groups found.
+                <TableCell colSpan={6} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2 text-neutral-500">
+                    <Users className="w-8 h-8 text-neutral-300" />
+                    <p className="font-medium">No groups found</p>
+                    {searchTerm && (
+                      <p className="text-sm">Try adjusting your search term</p>
+                    )}
+                    {!searchTerm && (
+                      <Button
+                        size="sm"
+                        className="mt-1 bg-blue-600 hover:bg-blue-700"
+                        onClick={() => setIsCreateOpen(true)}
+                      >
+                        <Plus className="w-4 h-4 mr-1" /> Create your first group
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -189,7 +204,7 @@ const GroupsList = () => {
                   <TableCell>
                     <div className="flex items-center">
                       <Shield className="w-4 h-4 mr-2 text-neutral-400" />
-                      {group._count?.policies || 0}
+                      {group._count?.policyAttachments || 0}
                     </div>
                   </TableCell>
                   <TableCell className="text-neutral-500">{new Date(group.createdAt).toLocaleDateString()}</TableCell>

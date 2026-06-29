@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Resources from './pages/Resources';
 import PoliciesList from './pages/iam/policies/PoliciesList';
 import PolicyForm from './pages/iam/policies/PolicyForm';
+import PolicyDetail from './pages/iam/policies/PolicyDetail';
 import GroupsList from './pages/iam/groups/GroupsList';
 import GroupDetail from './pages/iam/groups/GroupDetail';
 import UsersList from './pages/iam/users/UsersList';
@@ -34,6 +35,7 @@ const App = () => {
           <Route path="/iam/policies" element={<PoliciesList />} />
           <Route path="/iam/policies/new" element={<PolicyForm />} />
           <Route path="/iam/policies/:id/edit" element={<PolicyForm />} />
+          <Route path="/iam/policies/:id" element={<PolicyDetail />} />
           <Route path="/iam/groups" element={<GroupsList />} />
           <Route path="/iam/groups/:id" element={<GroupDetail />} />
           <Route path="/iam/users" element={<UsersList />} />
