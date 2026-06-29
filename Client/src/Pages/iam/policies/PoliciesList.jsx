@@ -280,11 +280,11 @@ const PoliciesList = () => {
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This will permanently delete the "{policy.name}" policy. This action cannot be undone.
-                              {policy.type === 'MANAGED' && (
+                              {/* {policy.type === 'MANAGED' && (
                                 <span className="block mt-2 font-medium text-red-600 dark:text-red-400">
                                   Note: MANAGED policies cannot be deleted if they are currently attached to any users or groups.
                                 </span>
-                              )}
+                              )} */}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
