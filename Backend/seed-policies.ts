@@ -14,7 +14,7 @@ const BASE_URL = 'http://localhost:3000/api';
 const POLICIES = [
   {
     name: 'IAMReadOnly',
-    description: 'Read-only access to IAM resources. Can list and view users, groups, and policies.',
+    description: 'Read-only access to IAM resources.',
     type: 'MANAGED',
     statements: [
       {
@@ -33,7 +33,7 @@ const POLICIES = [
   },
   {
     name: 'IAMFullAccess',
-    description: 'Full access to all IAM management operations including users, groups, policies, and boundaries.',
+    description: 'Full access to all IAM management.',
     type: 'MANAGED',
     statements: [
       {
@@ -66,7 +66,7 @@ const POLICIES = [
   },
   {
     name: 'AlertsManager',
-    description: 'Full management access to alerts including create, acknowledge, and delete.',
+    description: 'Full management access to alerts.',
     type: 'MANAGED',
     statements: [
       {
@@ -84,7 +84,7 @@ const POLICIES = [
   },
   {
     name: 'ReportsManager',
-    description: 'Full management access to reports including create, update, and delete.',
+    description: 'Full management access to reports.',
     type: 'MANAGED',
     statements: [
       {
@@ -102,7 +102,7 @@ const POLICIES = [
   },
   {
     name: 'AuditReadOnly',
-    description: 'Read-only access to audit logs and audit records.',
+    description: 'Read-only access to audit logs.',
     type: 'MANAGED',
     statements: [
       {
