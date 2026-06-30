@@ -113,14 +113,14 @@ const EffectivePermissionsSummary = ({ userProfile }) => {
     <Card className="shadow-md border-blue-100 dark:border-blue-900/30">
       <CardHeader className="bg-blue-50/50 dark:bg-blue-950/20 border-b border-blue-100 dark:border-blue-900/30 flex flex-row items-center justify-between">
         <CardTitle className="text-blue-900 dark:text-blue-400">Effective Permissions</CardTitle>
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           {verificationStatus === 'success' && <span className="flex items-center text-xs text-green-600 font-medium"><CheckCircle className="w-4 h-4 mr-1"/> Matches Backend</span>}
           {verificationStatus === 'mismatch' && <span className="flex items-center text-xs text-red-600 font-medium"><XCircle className="w-4 h-4 mr-1"/> Mismatch!</span>}
           <Button variant="outline" size="sm" onClick={verifyWithBackend} disabled={isVerifying}>
             {isVerifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Server className="w-4 h-4 mr-2" />}
             Verify with Backend
           </Button>
-        </div>
+        </div> */}
       </CardHeader>
       <CardContent className="p-0">
         {Object.entries(ACTIONS_BY_NAMESPACE).map(([namespace, actions]) => (

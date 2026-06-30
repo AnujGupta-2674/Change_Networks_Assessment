@@ -89,7 +89,7 @@ const Register = () => {
           <div className="text-center space-y-2 mb-8">
             <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Initialize System</h1>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Create the initial Root user for the organization.
+              Create the initial Root user for your organization.
             </p>
             <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 rounded-md p-3 mt-4 text-xs text-amber-800 dark:text-amber-400 text-left">
               <strong>Important:</strong> If you have run the seed script, the root user is already created. Do not use this form.
@@ -101,7 +101,7 @@ const Register = () => {
               <Label htmlFor="organizationName">Organization Name</Label>
               <Input
                 id="organizationName"
-                placeholder="Acme Corp"
+                placeholder="Your Organization Name"
                 {...register('organizationName')}
                 className={errors.organizationName ? 'border-red-500' : ''}
               />
@@ -112,7 +112,7 @@ const Register = () => {
               <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
-                placeholder="Root Administrator"
+                placeholder="Root Administrator Name"
                 {...register('name')}
                 className={errors.name ? 'border-red-500' : ''}
               />
@@ -124,7 +124,7 @@ const Register = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="root@org.local"
+                placeholder="your.email@domain.com"
                 {...register('email')}
                 className={errors.email ? 'border-red-500' : ''}
               />
@@ -137,7 +137,7 @@ const Register = () => {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="•••••••••••"
                   {...register('password')}
                   className={`pr-10 ${errors.password ? 'border-red-500' : ''}`}
                 />

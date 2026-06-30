@@ -68,7 +68,7 @@ const Login = () => {
             </div>
             
             <div className="space-y-2">
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
                 <Link
                   to="#"
@@ -76,7 +76,7 @@ const Login = () => {
                 >
                   Forgot your password?
                 </Link>
-              </div>
+              </div> */}
               <div className="relative">
                 <Input
                   id="password"
@@ -140,7 +140,7 @@ const Login = () => {
           <div className="space-y-2">
             <h2 className="text-3xl font-bold text-neutral-900 dark:text-white">Enterprise IAM Platform</h2>
             <p className="text-lg text-neutral-600 dark:text-neutral-400">
-              Manage identities, access policies, and organizational resources from a single, secure dashboard.
+              Manage identities, access policies and organizational resources from a single, secure dashboard.
             </p>
           </div>
           
