@@ -5,12 +5,9 @@ import { hasExplicitDeny, hasExplicitAllow, boundaryAllows } from './authorizati
 export type PermissionDecision = 'ALLOW' | 'DENY';
 
 /**
- * The core IAM permission evaluation algorithm — Steps 2, 3, and 4.
  *
  * This is a PURE FUNCTION — no database calls, no side effects.
  * All data collection (Step 1) and root bypass (Step 0) happen in AuthorizationService.
- *
- * Algorithm (from the assessment specification):
  *
  *   Step 2 — Explicit Deny:
  *     If ANY effective statement has Effect:"Deny" and includes the requested action

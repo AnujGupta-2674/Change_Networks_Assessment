@@ -17,9 +17,6 @@ import { ApiError } from '../utils/ApiError';
  *   401 — Not authenticated (no user on request)
  *   403 — Authenticated but lacks the required permission
  *
- * Controllers remain completely unaware of authorization logic.
- * No controller changes are ever required to add route protection.
- *
  * @param action - The IAM action required to access this route (e.g. 'reports:List')
  * @returns Express middleware function
  */

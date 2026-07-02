@@ -11,9 +11,6 @@ import { parseStatements } from '../types/iam.types';
  *   - All groups the user belongs to, and each group's attached policies
  *   - The user's boundary policy (if any)
  *
- * This avoids N+1 queries — regardless of how many groups or policies the user has,
- * only ONE database round-trip is made.
- *
  * @param userId - The user's UUID
  * @returns UserIAMContext, or null if the user does not exist
  */
